@@ -21,6 +21,10 @@ export default {
             return;
         }
 
+        await interaction.reply({
+            embeds: [createInfoEmbed("Collecting messages...")]
+        });
+
         // fetch and map messages to string format
         const messages = (await fetchHumanMessages(interaction.channel.messages, 25))
             .map<Promise<ReducedMessage>>(async msg => {
@@ -37,14 +41,13 @@ export default {
             .map<string>(msg => {
                 return `${msg.authorName}: ${msg.messageContent}`;
             });
-        
-        console.log(stringMessages);
+        console.debug(stringMessages);
         
         // reduce to one string
         let context = "";
         stringMessages.forEach(message => context += message + "\n");
         
-        await interaction.reply({
+        await interaction.editReply({
             embeds: [createInfoEmbed("Summarizing (please wait up to 3 minutes)")]
         });
         const {summary_text} = await summarize(context, interaction);

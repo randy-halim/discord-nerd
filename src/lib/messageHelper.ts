@@ -1,19 +1,22 @@
 import {Guild, Message, MessageManager, Snowflake, User} from "discord.js";
 
 export const fetchHumanMessages = async (messageManager: MessageManager, count: number) => {
-    let messages: Message[] = [];
-    
+    const initial = await messageManager.fetch({
+        limit: 25
+    });
+    let messages = initial.filter(msg => !msg.author.bot).map(v => v);
+
     // populate array
-    let lastId: Snowflake | undefined;
+    let lastId: string = messages[messages.length - 1] ? messages[messages.length - 1].id : "";
     while (messages.length < count) {
         let fetched = await messageManager.fetch({
             limit: 25,
-            before: lastId
+            before: lastId.length > 0 ? lastId : undefined
         });
+        lastId = fetched.map(v => v).pop()?.id || "";
         fetched = fetched.filter(msg => !msg.author.bot);
         const fetchedArr = fetched.map(v => v);
         messages.push(...fetchedArr);
-        lastId = fetchedArr.pop()?.id
     }
     
     // reduce to correct count
