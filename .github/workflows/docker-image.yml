@@ -9,8 +9,6 @@ on:
 jobs:
 
   build:
-    if: startsWith(github.event.ref, 'refs/tags')
-    
     runs-on: ubuntu-latest
 
     steps:
