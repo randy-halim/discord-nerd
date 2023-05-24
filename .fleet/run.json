@@ -12,5 +12,18 @@
             "program": "npm",
             "args": ["run", "start:register"],
         },
+        {
+            "type": "docker-build",
+            "name": "Build fcrh/discord-ai-summarization",
+            "file": "Dockerfile",
+            "buildOptions": "-t fcrh/discord-ai-summarization:latest",
+        },
+        {
+            "type": "docker-run",
+            "name": "Docker Run fcrh/discord-ai-summarization",
+            "imageIdOrName": "fcrh/discord-ai-summarization:latest",
+            "dependsOn": ["Build fcrh/discord-ai-summarization"],
+            "runOptions": "--env-file=.env --rm",
+        },
     ]
 }

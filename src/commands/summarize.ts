@@ -4,6 +4,8 @@ import {summarize} from "../lib/queryAI";
 import {createErrorEmbed, createInfoEmbed} from "../lib/embedGenerator";
 import {fetchHumanMessages, getName} from "../lib/messageHelper";
 
+let now = 0;
+
 export default {
     data: new SlashCommandBuilder()
         .setName("summarize")
@@ -17,6 +19,15 @@ export default {
         } else if (!interaction.guild) {
             await interaction.reply({
                 embeds: [createErrorEmbed("This command must be run in a server, or this bot has no permission to view members.")]
+            });
+            return;
+        }
+
+        if (now + 30000 > Date.now()) {
+            await interaction.reply({
+                embeds: [createErrorEmbed(
+                    "Due to API rate limitations, this command can only be run once every 30 seconds. Please try again in a little bit!"
+                )]
             });
             return;
         }
@@ -55,7 +66,13 @@ export default {
             await interaction.editReply("Unable to respond, as this is not a valid text channel");
             return;
         }
-        await interaction.channel.send(summary_text);
+        await interaction.editReply({
+            embeds: [createInfoEmbed(`
+                # Summary of \`${interaction.channel.toString()}\`
+                ${summary_text}
+            `)]
+        });
+        now = Date.now();
     }
 } as CommandLike;
 

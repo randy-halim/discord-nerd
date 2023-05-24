@@ -24,7 +24,7 @@ export const summarize = async (content: string, interaction: ChatInputCommandIn
                     throw new Error("No access to text channel");
                 }
                 // model was not loaded, so we'll display a warning message
-                await interaction.channel.send({
+                await interaction.reply({
                     embeds: [createWarnEmbed("Model is not loaded, this may take up to 10 minutes...")]
                 })
                 
