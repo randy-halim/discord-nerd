@@ -1,0 +1,16 @@
+{
+    "configurations": [
+        {
+            "type": "command",
+            "name": "NPM Run start:compile",
+            "program": "npm",
+            "args": ["run", "start:compile"],
+        },
+        {
+            "type": "command",
+            "name": "NPM Run start --register",
+            "program": "npm",
+            "args": ["run", "start:register"],
+        },
+    ]
+}

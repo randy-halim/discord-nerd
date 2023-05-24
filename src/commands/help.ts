@@ -1,0 +1,26 @@
+import {CommandLike} from "../commandLoader";
+import {SlashCommandBuilder} from "discord.js";
+import {createInfoEmbed} from "../lib/embedGenerator";
+
+export default {
+    data: new SlashCommandBuilder()
+        .setName("help")
+        .setDescription("Shows information about this bot"),
+    handle: async (interaction) => {
+        await interaction.reply({
+            embeds: [
+                createInfoEmbed(`
+                    # Conversation Summarizer powered by AI
+                    Built by [Randy Halim](https://fcrh.me)
+                    Project Repository: [github.com](https://github.com/randy-halim/discord-ai-conversation-summary)
+                    # Commands
+                    \`/summarize\` - Summarize the last 25 sent messages
+                    \`/ping\` - Test bot response
+                    \`/help\` - Show this screen
+                    # Project motivation
+                    See [this project's overview](https://github.com/randy-halim/discord-ai-conversation-summary#why).
+                `)
+            ]
+        })
+    }
+} as CommandLike

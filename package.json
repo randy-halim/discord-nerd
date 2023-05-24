@@ -1,0 +1,23 @@
+{
+  "name": "discord-summary-bot",
+  "version": "0.0.1-alpha",
+  "description": "A futile attempt to summarize discord conversations with AI",
+  "main": "out/index.js",
+  "scripts": {
+    "test": "echo \"No test configured!\" && exit 1",
+    "compile": "rm -rf out/ && tsc",
+    "start": "node --enable-source-maps .",
+    "start:compile": "npm run compile && npm run start",
+    "start:register": "npm run compile && node --enable-source-maps . --register"
+  },
+  "author": "https://github.com/randy-halim",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.4.0",
+    "discord.js": "^14.11.0",
+    "dotenv": "^16.0.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.4"
+  }
+}
