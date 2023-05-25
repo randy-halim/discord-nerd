@@ -68,7 +68,7 @@ export default {
         }
         await interaction.editReply({
             embeds: [createInfoEmbed(`
-                # Summary of \`${interaction.channel.toString()}\`
+                # Summary of ${interaction.channel.toString()}
                 ${summary_text}
             `)]
         });

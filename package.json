@@ -1,8 +1,8 @@
 {
   "name": "discord-summary-bot",
-  "version": "0.0.1-alpha",
+  "version": "0.0.2-alpha",
   "description": "A futile attempt to summarize discord conversations with AI",
-  "main": "out/index.js",
+  "main": "out/src/index.js",
   "scripts": {
     "test": "echo \"No test configured!\" && exit 1",
     "compile": "rm -rf out/ && tsc",

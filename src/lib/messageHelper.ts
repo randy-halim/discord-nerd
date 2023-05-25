@@ -1,4 +1,4 @@
-import {Guild, Message, MessageManager, Snowflake, User} from "discord.js";
+import {Guild, MessageManager, User} from "discord.js";
 
 export const fetchHumanMessages = async (messageManager: MessageManager, count: number) => {
     const initial = await messageManager.fetch({
