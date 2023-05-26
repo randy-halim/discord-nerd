@@ -61,9 +61,12 @@ export default {
         await interaction.editReply({
             embeds: [createInfoEmbed("Summarizing (please wait up to 3 minutes)")]
         });
-        const {summary_text} = await summarize(context, interaction);
+        const {summary_text, success} = await summarize(context, interaction);
         if (!interaction.channel) {
             await interaction.editReply("Unable to respond, as this is not a valid text channel");
+            return;
+        }
+        if (!success) {
             return;
         }
         await interaction.editReply({

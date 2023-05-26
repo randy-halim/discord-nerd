@@ -1,56 +1,82 @@
-import axios, {AxiosError} from "axios";
+import axios, {AxiosError, AxiosResponse} from "axios";
 import {HF_TOKEN, SUMMANATION_MODEL} from "../index";
 import {ChatInputCommandInteraction} from "discord.js";
-import {createWarnEmbed} from "./embedGenerator";
+import {createErrorEmbed, createWarnEmbed} from "./embedGenerator";
 
-export const summarize = async (content: string, interaction: ChatInputCommandInteraction) => {
-    console.log("[Info] Initializing summarization model");
+async function summarize(content: string, interaction: ChatInputCommandInteraction, waitForModel = false): Promise<ReturnSummarizeContent> {
+    const headers = {
+        Authorization: `Bearer ${HF_TOKEN}`
+    };
     try {
-        const {data} = await axios.post<ReturnSummarizeContent[]>(SUMMANATION_MODEL, {
-            inputs: content
-        }, {
-            headers: {
-                Authorization: `Bearer ${HF_TOKEN}`,
-            }
-        });
-        console.log("[Info] Summarized!");
-        console.debug(data);
+        console.log("[Info] Sending request to summarization model...");
+        let res: AxiosResponse<ReturnSummarizeContent[]>;
+        if (waitForModel) {
+            console.warn("[Info] Waiting for model to be loaded.");
+            await interaction.editReply({
+                embeds: [createWarnEmbed("Model is not loaded. Processing may take longer.")]
+            });
 
-        return data[0];
-    } catch (e: any) {
-        if (e.isAxiosError) {
-            if ((e as AxiosError).response?.status === 503) {
-                if (!interaction.channel) {
-                    throw new Error("No access to text channel");
-                }
-                // model was not loaded, so we'll display a warning message
-                await interaction.editReply({
-                    embeds: [createWarnEmbed("Model is not loaded, this may take up to 10 minutes...")]
-                })
-                
-                const {data} = await axios.post<ReturnSummarizeContent[]>(SUMMANATION_MODEL, {
+            res = await axios.post(
+                SUMMANATION_MODEL,
+                {
                     inputs: content,
                     options: {
                         wait_for_model: true
                     }
-                }, {
-                    headers: {
-                        Authorization: `Bearer ${HF_TOKEN}`,
-                    }
-                });
-                console.log("[Info] Summarized!");
-                console.debug(data);
+                },
+                { headers }
+            );
+        } else {
+            res = await axios.post(
+                SUMMANATION_MODEL,
+                {
+                    inputs: content
+                }
+            );
+        }
 
-                return data[0];
+        console.log("[Info] Summarization successful!");
+        console.debug(res.data);
+
+        const returnData = res.data[0];
+        returnData.success = true;
+
+        return returnData;
+    } catch (e: any) {
+        // type guard for AxiosError
+        if (e.isAxiosError) {
+            const err: AxiosError = e;
+
+            if (err.response?.status === 503) {
+                return await summarize(content, interaction, true);
+            } else if (err.response?.status === 504) {
+                await interaction.editReply({
+                    embeds: [createErrorEmbed("The model timed out while processing the request.")]
+                });
+                return {
+                    success: false,
+                    summary_text: ""
+                }
             } else {
                 throw e;
             }
         } else {
-            throw e;
+            // log to console, return error message
+            console.error(e);
+            await interaction.editReply({
+                embeds: [createErrorEmbed()]
+            });
+            return {
+                success: false,
+                summary_text: ""
+            };
         }
     }
 }
 
+export {summarize};
+
 export interface ReturnSummarizeContent {
     summary_text: string;
+    success: boolean;
 }
