@@ -13,9 +13,11 @@
   "author": "https://github.com/randy-halim",
   "license": "MIT",
   "dependencies": {
+    "@huggingface/inference": "^2.6.4",
     "axios": "^1.4.0",
     "discord.js": "^14.11.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "typescript": "^5.0.4"

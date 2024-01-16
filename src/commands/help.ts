@@ -1,30 +1,30 @@
-import {CommandLike} from "../commandLoader";
-import {SlashCommandBuilder} from "discord.js";
-import {createInfoEmbed} from "../lib/embedGenerator";
-import {version} from "../../package.json";
+import { CommandLike } from "../commandLoader";
+import { SlashCommandBuilder } from "discord.js";
+import { createInfoEmbed } from "../lib/embedGenerator";
+import { version } from "../../package.json";
 
 export default {
-    data: new SlashCommandBuilder()
-        .setName("help")
-        .setDescription("Shows information about this bot"),
-    handle: async (interaction) => {
-        await interaction.reply({
-            embeds: [
-                createInfoEmbed(`
-                    # Conversation Summarizer powered by AI
+  data: new SlashCommandBuilder()
+    .setName("help")
+    .setDescription("Shows information about this bot"),
+  handle: async (interaction) => {
+    await interaction.reply({
+      embeds: [
+        createInfoEmbed(`
+                    ## Conversation Summarizer powered by AI
                     Version \`${version}\`
                     Built by [Randy Halim](https://fcrh.me)
                     Project Repository: [github.com](https://github.com/randy-halim/discord-ai-conversation-summary)
 
-                    # Commands
-                    \`/summarize\` - Summarize the last 25 sent messages
+                    ## Commands
+                    \`/summarize\` - Summarize recent messages
                     \`/ping\` - Test bot response
                     \`/help\` - Show this screen
                     
-                    # Project motivation
+                    ## Project motivation
                     See [this project's overview](https://github.com/randy-halim/discord-ai-conversation-summary#why).
-                `)
-            ]
-        })
-    }
-} as CommandLike
+                `),
+      ],
+    });
+  },
+} as CommandLike;
