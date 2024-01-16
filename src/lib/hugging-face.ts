@@ -1,8 +1,8 @@
 import { HfInference, SummarizationOutput } from "@huggingface/inference";
-import { HF_TOKEN, SUMMANATION_MODEL } from "..";
+import { ENV_CONFIG } from "../env";
 import { ReducedMessage, textifyMessageForTaskModels } from "./messages";
 
-const endpoint = new HfInference(HF_TOKEN);
+const endpoint = new HfInference(ENV_CONFIG.hfEndpoints.token);
 
 // export const $summarize = new Observable(async (subscriber) => {
 //   return subscriber.complete();
@@ -22,7 +22,7 @@ export const summarize = async (input: string | ReducedMessage[]) => {
 
   const settings = {
     inputs: input,
-    model: SUMMANATION_MODEL,
+    model: ENV_CONFIG.hfEndpoints.endpoint,
     parameters: {
       max_length: 100,
     },

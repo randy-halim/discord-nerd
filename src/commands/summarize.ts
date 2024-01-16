@@ -3,13 +3,16 @@ import { ChannelType, SlashCommandBuilder } from "discord.js";
 import { createErrorEmbed, createInfoEmbed } from "../lib/embedGenerator";
 import { getMessages, textifyMessageForTaskModels } from "../lib/messages";
 import { summarize } from "../lib/hugging-face";
+import { ENV_CONFIG } from "../env";
 
 let now = 0;
 
 export default {
   data: new SlashCommandBuilder()
     .setName("summarize")
-    .setDescription("Summarize a Discord conversation"),
+    .setDescription(
+      "The original. Summarize a conversation in a text channel."
+    ),
   handle: async (interaction) => {
     if (
       !interaction.channel ||
@@ -59,6 +62,7 @@ export default {
       embeds: [createInfoEmbed(summary)],
     });
   },
+  enabled: ENV_CONFIG.enable.hfEndpoints,
 } as CommandLike;
 
 interface ReducedMessage {

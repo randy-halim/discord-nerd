@@ -27,4 +27,5 @@ export default {
       ],
     });
   },
+  enabled: true,
 } as CommandLike;
