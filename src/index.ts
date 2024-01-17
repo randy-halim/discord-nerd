@@ -1,6 +1,7 @@
 import { Client, Events, GatewayIntentBits, REST, Routes } from "discord.js";
 import commandLoader from "./commandLoader";
 import { createErrorEmbed } from "./lib/embedGenerator";
+import { PrismaClient, User } from "@prisma/client";
 
 // import env
 import "./env";
@@ -16,12 +17,16 @@ const client = new Client({
 });
 export default client; // for code to use later
 
+// on ready callback
 client.once(Events.ClientReady, (client) => {
   console.log(`[Info] Using user ${client.user.tag}`);
   console.log(
     `[Info] Use this link to add the bot: https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENTID}&permissions=67584&scope=bot%20applications.commands`
   );
 });
+
+// load Prisma
+export const PRISMA = new PrismaClient();
 
 // load slash commands
 const commands = commandLoader();
@@ -116,6 +121,25 @@ client.on(Events.InteractionCreate, async (interaction) => {
     await interaction.reply({
       embeds: [createErrorEmbed(`This command is disabled.`)],
     });
+  }
+
+  // record the user to Prisma if they are not already in
+  let user: User;
+  const foundUser = await PRISMA.user.findUnique({
+    where: { id: interaction.user.id },
+  });
+  if (foundUser === null) {
+    console.info(
+      "[Info] User doesn't exist in database. Recording via Prisma..."
+    );
+    user = await PRISMA.user.create({
+      data: {
+        id: interaction.user.id,
+        lastInteraction: new Date(0),
+      },
+    });
+  } else {
+    user = foundUser;
   }
 
   // execute command
