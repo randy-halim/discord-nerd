@@ -1,6 +1,6 @@
 {
   "name": "discord-summary-bot",
-  "version": "0.1.1-alpha",
+  "version": "0.2.0",
   "description": "A futile attempt to summarize discord conversations with AI",
   "main": "out/src/index.js",
   "scripts": {
@@ -13,11 +13,17 @@
   "author": "https://github.com/randy-halim",
   "license": "MIT",
   "dependencies": {
+    "@huggingface/inference": "^2.6.4",
+    "@prisma/client": "5.8.1",
     "axios": "^1.4.0",
     "discord.js": "^14.11.0",
-    "dotenv": "^16.0.3"
+    "dotenv": "^16.0.3",
+    "rxjs": "^7.8.1",
+    "sqlite": "^5.1.1"
   },
   "devDependencies": {
+    "prisma": "^5.8.1",
     "typescript": "^5.0.4"
-  }
+  },
+  "packageManager": "pnpm@8.7.4"
 }

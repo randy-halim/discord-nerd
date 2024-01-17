@@ -1,86 +1,72 @@
-import {CommandLike} from "../commandLoader";
-import {SlashCommandBuilder} from "discord.js";
-import {summarize} from "../lib/queryAI";
-import {createErrorEmbed, createInfoEmbed} from "../lib/embedGenerator";
-import {fetchHumanMessages, getName} from "../lib/messageHelper";
+import { CommandLike } from "../commandLoader";
+import { ChannelType, SlashCommandBuilder } from "discord.js";
+import { createErrorEmbed, createInfoEmbed } from "../lib/embedGenerator";
+import { getMessages, textifyMessageForTaskModels } from "../lib/messages";
+import { summarize } from "../lib/hugging-face";
+import { ENV_CONFIG } from "../env";
 
 let now = 0;
 
 export default {
-    data: new SlashCommandBuilder()
-        .setName("summarize")
-        .setDescription("Summarize a Discord conversation"),
-    handle: async (interaction) => {
-        if (!interaction.channel) {
-            await interaction.reply({
-                embeds: [createErrorEmbed("This command must be run in a server.")]
-            });
-            return;
-        } else if (!interaction.guild) {
-            await interaction.reply({
-                embeds: [createErrorEmbed("This command must be run in a server, or this bot has no permission to view members.")]
-            });
-            return;
-        }
-
-        if (now + 30000 > Date.now()) {
-            await interaction.reply({
-                embeds: [createErrorEmbed(
-                    "Due to API rate limitations, this command can only be run once every 30 seconds. Please try again in a little bit!"
-                )]
-            });
-            return;
-        }
-
-        await interaction.reply({
-            embeds: [createInfoEmbed("Collecting messages...")]
-        });
-
-        // fetch and map messages to string format
-        const messages = (await fetchHumanMessages(interaction.channel.messages, 25))
-            .map<Promise<ReducedMessage>>(async msg => {
-                if (!msg.guild) {
-                    throw new Error("Operation not completed in a server");
-                }
-                return {
-                    authorName: await getName(msg.author, msg.guild),
-                    messageContent: msg.content,
-                    timestamp: msg.createdTimestamp
-                }
-            });
-        const stringMessages = (await Promise.all(messages))
-            .map<string>(msg => {
-                return `${msg.authorName}: ${msg.messageContent}`;
-            });
-        console.debug(stringMessages);
-        
-        // reduce to one string
-        let context = "";
-        stringMessages.forEach(message => context += message + "\n");
-        
-        await interaction.editReply({
-            embeds: [createInfoEmbed("Summarizing (please wait up to 3 minutes)")]
-        });
-        const {summary_text, success} = await summarize(context, interaction);
-        if (!interaction.channel) {
-            await interaction.editReply("Unable to respond, as this is not a valid text channel");
-            return;
-        }
-        if (!success) {
-            return;
-        }
-        await interaction.editReply({
-            embeds: [createInfoEmbed(`
-                # Summary of ${interaction.channel.toString()}
-                ${summary_text}
-            `)]
-        });
-        now = Date.now();
+  data: new SlashCommandBuilder()
+    .setName("summarize")
+    .setDescription(
+      "The original. Summarize a conversation in a text channel."
+    ),
+  handle: async (interaction) => {
+    if (
+      !interaction.channel ||
+      interaction.channel.type !== ChannelType.GuildText
+    ) {
+      await interaction.reply({
+        embeds: [createErrorEmbed("This command must be run in a server.")],
+      });
+      return;
+    } else if (!interaction.guild) {
+      await interaction.reply({
+        embeds: [
+          createErrorEmbed(
+            "This command must be run in a server, or this bot has no permission to view members."
+          ),
+        ],
+      });
+      return;
     }
+
+    if (now + 30000 > Date.now()) {
+      await interaction.reply({
+        embeds: [
+          createErrorEmbed(
+            "Due to API rate limitations, this command can only be run once every 30 seconds. Please try again in a little bit!"
+          ),
+        ],
+      });
+      return;
+    }
+
+    await interaction.reply({
+      embeds: [createInfoEmbed("Collecting messages...")],
+    });
+
+    const messages = await getMessages(interaction.channel, 25);
+    const input = messages.map(textifyMessageForTaskModels).join("\n");
+
+    await interaction.editReply({
+      embeds: [createInfoEmbed("Summarizing...")],
+    });
+
+    now = Date.now();
+    const summary = await summarize(input);
+
+    await interaction.editReply({
+      embeds: [createInfoEmbed(summary)],
+    });
+  },
+  enabled: ENV_CONFIG.enable.hfEndpoints,
 } as CommandLike;
 
 interface ReducedMessage {
-    authorName: string;
-    messageContent: string;
-    timestamp: number
+  authorName: string;
+  messageContent: string;
+  timestamp: number;
 }

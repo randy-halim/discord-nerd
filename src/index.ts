@@ -1,140 +1,194 @@
-import {Client, Events, GatewayIntentBits, REST, Routes} from "discord.js";
+import { Client, Events, GatewayIntentBits, REST, Routes } from "discord.js";
 import commandLoader from "./commandLoader";
-import {createErrorEmbed} from "./lib/embedGenerator";
+import { createErrorEmbed, createInfoEmbed } from "./lib/embedGenerator";
+import { PrismaClient, User } from "@prisma/client";
+import { version } from "../package.json";
 
 // import env
-import "dotenv/config";
-
-// bootstrap some tokens from env
-const DISCORD_TOKEN = process.env.DISCORD_TOKEN;
-const DISCORD_CLIENTID = process.env.DISCORD_CLIENTID;
-export const HF_TOKEN = process.env.HF_TOKEN;
-export const SUMMANATION_MODEL = "https://api-inference.huggingface.co/models/kabita-choudhary/finetuned-bart-for-conversation-summary";
-
-if (!HF_TOKEN) {
-    console.error("[Error] Missing HF_TOKEN env variable. Create a access token at https://huggingface.co/settings/tokens");
-    process.exit(1);
-}
-if (!DISCORD_TOKEN) {
-    console.error("[Error] Missing DISCORD_TOKEN env variable. Create a Discord bot at https://discord.com/developers/applications and copy the bot token.");
-    process.exit(1);
-}
-if (!DISCORD_CLIENTID) {
-    console.error("[Error] Missing DISCORD_CLIENTID env variable. Create a Discord bot at https://discord.com/developers/applications and copy the application id.");
-    process.exit(1);
-}
+import "./env";
+import { DISCORD_CLIENTID, DISCORD_TOKEN } from "./env";
 
 // bootstrap discord client
 const client = new Client({
-    intents: [GatewayIntentBits.Guilds, GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMessages]
+  intents: [
+    GatewayIntentBits.Guilds,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMessages,
+  ],
 });
 export default client; // for code to use later
 
-client.once(Events.ClientReady, client => {
-    console.log(`[Info] Using user ${client.user.tag}`);
-    console.log(`[Info] Use this link to add the bot: https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENTID}&permissions=67584&scope=bot%20applications.commands`)
+// on ready callback
+client.once(Events.ClientReady, (client) => {
+  console.log(`[Info] Using user ${client.user.tag}`);
+  console.log(
+    `[Info] Use this link to add the bot: https://discord.com/api/oauth2/authorize?client_id=${DISCORD_CLIENTID}&permissions=67584&scope=bot%20applications.commands`
+  );
 });
+
+// load Prisma
+export const PRISMA = new PrismaClient();
 
 // load slash commands
 const commands = commandLoader();
 
 // intercept cli arguments and take action
 const rest = new REST().setToken(DISCORD_TOKEN);
-if (process.argv[2] === "--register") { // --register option
-    console.log("[Info] --register found, registering commands...");
+if (process.argv[2] === "--register") {
+  // --register option
+  console.log("[Info] --register found, registering commands...");
 
-    const commandsArr = commands.map(command => command.data.toJSON());
+  const commandsArr = commands.map((command) => command.data.toJSON());
 
-    (async () => {
-        try {
-            await rest.put(
-                Routes.applicationCommands(DISCORD_CLIENTID),
-                {
-                    body: commandsArr
-                }
-                );
-            console.log(`[Info] Registered ${commands.size} commands`)
-        } catch (e: any) {
-            console.error(e);
-            console.warn("[Warn] Command registration did not complete successfully.");
-        }
-    })()
-} else if (process.argv[2] === "--remove") { // --remove option
-    console.log("[Info] --remove found, deregistering commands...");
+  (async () => {
+    try {
+      await rest.put(Routes.applicationCommands(DISCORD_CLIENTID), {
+        body: commandsArr,
+      });
+      console.log(`[Info] Registered ${commands.size} commands`);
+    } catch (e: any) {
+      console.error(e);
+      console.warn(
+        "[Warn] Command registration did not complete successfully."
+      );
+    }
+  })();
+} else if (process.argv[2] === "--remove") {
+  // --remove option
+  console.log("[Info] --remove found, deregistering commands...");
 
-    (async () => {
-        try {
-            await rest.put(
-                Routes.applicationCommands(DISCORD_CLIENTID),
-                {
-                    body: []
-                }
-                )
-            console.log("[Info] Deleted existing commands");
-        } catch (e: any) {
-            console.error(e);
-            console.warn("[Warn] Command deletion did not complete successfully.");
-        }
+  (async () => {
+    try {
+      await rest.put(Routes.applicationCommands(DISCORD_CLIENTID), {
+        body: [],
+      });
+      console.log("[Info] Deleted existing commands");
+    } catch (e: any) {
+      console.error(e);
+      console.warn("[Warn] Command deletion did not complete successfully.");
+    }
 
-        process.exit(0);
-    })()
-} else if (process.argv[2] === "--help") { // --help option
-    console.log("Usage:");
-    console.log("index.js [--register | --remove | --help]");
-    console.log(`
+    process.exit(0);
+  })();
+} else if (process.argv[2] === "--help") {
+  // --help option
+  console.log("Usage:");
+  console.log("index.js [--register | --remove | --help]");
+  console.log(`
 Options:
   --help      Print help information
   --register  Starts bot with registering commands to the application (reccomended for new bots)
   --remove    Deregisters commands to the application (reccomended for updating bot)
     `);
-    process.exit(0);
-} else if (process.argv[2]) { // there was a arg passed, but not valid
-    console.error("Unknown option " + process.argv[2]);
-    console.log();
-    console.log("Usage:");
-    console.log("index.js [--register | --remove | --help]");
-    process.exit(1);
+  process.exit(0);
+} else if (process.argv[2]) {
+  // there was a arg passed, but not valid
+  console.error("Unknown option " + process.argv[2]);
+  console.log();
+  console.log("Usage:");
+  console.log("index.js [--register | --remove | --help]");
+  process.exit(1);
 }
 
 // listen for slash commands
-client.on(Events.InteractionCreate, async interaction => {
-    // ignore non-slash interactions
-    if (!interaction.isChatInputCommand()) {
-        return;
-    }
-    
-    const command = commands.get(interaction.commandName);
-    
-    // warn on non-existant commands
-    if (!command) {
-        console.warn(`Command ${interaction.commandName} was invoked, but there is no handler found.`);
-        await interaction.reply({
-            embeds: [createErrorEmbed(`
+client.on(Events.InteractionCreate, async (interaction) => {
+  // ignore non-slash interactions
+  if (!interaction.isChatInputCommand()) {
+    return;
+  }
+
+  const command = commands.get(interaction.commandName);
+
+  // error on non-existant commands
+  if (!command) {
+    console.warn(
+      `Command ${interaction.commandName} was invoked, but there is no handler found.`
+    );
+    await interaction.reply({
+      embeds: [
+        createErrorEmbed(`
                 This command was removed. If you were not expecting this, please [message the bot author](https://github.com/randy-halim)
-            `)]
-        })
-        return;
+            `),
+      ],
+    });
+    return;
+  }
+
+  // error on disabled commands
+  if (!command.enabled) {
+    console.warn(
+      `Command ${interaction.commandName} was invoked, but it is disabled.`
+    );
+    await interaction.reply({
+      embeds: [createErrorEmbed(`This command is disabled.`)],
+    });
+  }
+
+  // record the user to Prisma if they are not already in
+  let user: User;
+  const foundUser = await PRISMA.user.findUnique({
+    where: { id: interaction.user.id },
+  });
+  if (foundUser === null) {
+    console.info(
+      "[Info] User doesn't exist in database. Recording via Prisma..."
+    );
+    user = await PRISMA.user.create({
+      data: {
+        id: interaction.user.id,
+        lastInteraction: new Date(0),
+        lastInteractionVersion: "never",
+      },
+    });
+  } else {
+    user = foundUser;
+  }
+
+  try {
+    // execute command
+    console.log(
+      `[Info, ${new Date().toISOString()}] Executing '/${command.data.name}'`
+    );
+    await command.handle(interaction);
+
+    // post-execute command
+    // check if user.lastInteraction was over 7 days ago or if user.lastInteractionVersion is not matching
+    if (
+      user.lastInteraction.getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000 ||
+      user.lastInteractionVersion !== version
+    ) {
+      await interaction.followUp({
+        embeds: [
+          createInfoEmbed(`
+          Hey there! Looks like it may have been a while since you last used this bot.
+          Some things may have changed since then. You can always check out the changelog on [GitHub](https://github.com/randy-halim/discord-ai-conversation-summary)!
+          `),
+        ],
+        ephemeral: true,
+      });
     }
-    
-    try {
-        console.log(`[Info, ${new Date().toISOString()}] Executing '/${command.data.name}'`);
-        await command.handle(interaction);
-    } catch (e: any) {
-        console.error("[Error] ", e);
-        
-        if (interaction.replied || interaction.deferred) {
-            await interaction.followUp({
-                embeds: [createErrorEmbed()],
-                ephemeral: true
-            });
-        } else {
-            await interaction.reply({
-                embeds: [createErrorEmbed()],
-                ephemeral: true
-            })
-        }
+    // regardless, update interaction time and version
+    await PRISMA.user.update({
+      where: { id: interaction.user.id },
+      data: {
+        lastInteraction: new Date(),
+        lastInteractionVersion: version,
+      },
+    });
+  } catch (e: any) {
+    console.error("[Error] ", e);
+
+    if (interaction.replied || interaction.deferred) {
+      await interaction.followUp({
+        embeds: [createErrorEmbed()],
+      });
+    } else {
+      await interaction.reply({
+        embeds: [createErrorEmbed()],
+      });
     }
-})
+  }
+});
 
 // start that bad boy
 client.login(DISCORD_TOKEN);
