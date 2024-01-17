@@ -1,7 +1,8 @@
 import { Client, Events, GatewayIntentBits, REST, Routes } from "discord.js";
 import commandLoader from "./commandLoader";
-import { createErrorEmbed } from "./lib/embedGenerator";
+import { createErrorEmbed, createInfoEmbed } from "./lib/embedGenerator";
 import { PrismaClient, User } from "@prisma/client";
+import { version } from "../package.json";
 
 // import env
 import "./env";
@@ -136,18 +137,44 @@ client.on(Events.InteractionCreate, async (interaction) => {
       data: {
         id: interaction.user.id,
         lastInteraction: new Date(0),
+        lastInteractionVersion: "never",
       },
     });
   } else {
     user = foundUser;
   }
 
-  // execute command
   try {
+    // execute command
     console.log(
       `[Info, ${new Date().toISOString()}] Executing '/${command.data.name}'`
     );
     await command.handle(interaction);
+
+    // post-execute command
+    // check if user.lastInteraction was over 7 days ago or if user.lastInteractionVersion is not matching
+    if (
+      user.lastInteraction.getTime() < Date.now() - 7 * 24 * 60 * 60 * 1000 ||
+      user.lastInteractionVersion !== version
+    ) {
+      await interaction.followUp({
+        embeds: [
+          createInfoEmbed(`
+          Hey there! Looks like it may have been a while since you last used this bot.
+          Some things may have changed since then. You can always check out the changelog on [GitHub](https://github.com/randy-halim/discord-ai-conversation-summary)!
+          `),
+        ],
+        ephemeral: true,
+      });
+    }
+    // regardless, update interaction time and version
+    await PRISMA.user.update({
+      where: { id: interaction.user.id },
+      data: {
+        lastInteraction: new Date(),
+        lastInteractionVersion: version,
+      },
+    });
   } catch (e: any) {
     console.error("[Error] ", e);
 

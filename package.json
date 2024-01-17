@@ -1,6 +1,6 @@
 {
   "name": "discord-summary-bot",
-  "version": "0.1.1-alpha",
+  "version": "0.2.0",
   "description": "A futile attempt to summarize discord conversations with AI",
   "main": "out/src/index.js",
   "scripts": {
