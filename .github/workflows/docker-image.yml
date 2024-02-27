@@ -24,7 +24,7 @@ jobs:
       with:
         push: true
         tags: |
-          ghcr.io/randy-halim/discord-ai-conversation-summary:latest
-          ghcr.io/randy-halim/discord-ai-conversation-summary:${{ github.event.release.tag_name }}
+          ghcr.io/randy-halim/discord-nerd:latest
+          ghcr.io/randy-halim/discord-nerd:${{ github.event.release.tag_name }}
     
     
